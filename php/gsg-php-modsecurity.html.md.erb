@@ -1,0 +1,57 @@
+---
+title: Mod Security
+owner: Buildpacks
+---
+
+<strong><%= modified_date %></strong>
+
+[Mod Security](https://www.modsecurity.org/) Provides WAF (Web Application Firewall) features in php buildpack natively for httpd.
+
+The [OWASP ModSecurity Core Rule Set (CRS)](https://modsecurity.org/crs/) is a set of generic attack detection rules for use with ModSecurity or compatible web application firewalls. The CRS aims to protect web applications from a wide range of attacks, including the OWASP Top Ten, with a minimum of false alerts.
+
+## <a id="activation"></a> Activation
+
+You can activate Mod Security for the PHP buildpack in this way:
+
+in <strong>.bp-config/httpd/extra/httpd-modules</strong> file, activate (uncomment) following modules :
+
+```apacheconf
+LoadModule unique_id_module modules/mod_unique_id.so
+LoadModule security2_module modules/mod_security2.so
+```
+
+## <a id="configuration"></a> Configuration
+You can configure Mod Security for the PHP buildpack in this way:
+
+1) get default file in <strong>defaults/config/modsecurity-crs/modsecurity.conf</strong>
+2) overload in <strong>.bp-config/modsecurity-crs/modsecurity.conf</strong> file, for activate JSON format output, uncomment following line :
+
+```apacheconf
+...
+SecAuditLogFormat JSON
+...
+```
+
+## <a id="output"></a> Sample output trace
+
+* Without JSON log format
+
+```apacheconf
+...
+httpd   | Apache-Error: [file "apache2_util.c"] [line 271] [level 3] [client XXX.XXX.XXX.XXX] ModSecurity: Warning. detected XSS using libinjection. [file "/home/vcap/app/modsecurity/crs/rules/REQUEST-941-APPLICATION-ATTACK-XSS.conf"] [line "64"] [id "941100"] [rev "2"] [msg "XSS Attack Detected via libinjection"] [data "Matched Data: connection found within ARGS:test: <script>alert(1)</script>"] [severity "CRITICAL"] [ver "OWASP_CRS/3.0.0"] [maturity "1"] [accuracy "9"] [tag "application-multi"] [tag "language-multi"] [tag "platform-multi"] [tag "attack-xss"] [tag "OWASP_CRS/WEB_ATTACK/XSS"] [tag "WASCTC/WASC-8"] [tag "WASCTC/WASC-22"] [tag "OWASP_TOP_10/A3"] [tag "OWASP_AppSensor/IE1"] [tag "CAPEC-242"] [hostname "hostname.example.com"] [uri "/"] [unique_id "WoWOrDHRIxKXc@TAHBUkEAAAAIc"]
+...
+2018-02-15T14:44:12.45+0100 [APP/PROC/WEB/0] OUT 13:44:12 httpd   | Producer: ModSecurity for Apache/2.9.2 (http://www.modsecurity.org/); OWASP_CRS/3.0.2.
+2018-02-15T14:44:12.45+0100 [APP/PROC/WEB/0] OUT 13:44:12 httpd   | Server: Apache
+2018-02-15T14:44:12.45+0100 [APP/PROC/WEB/0] OUT 13:44:12 httpd   | Engine-Mode: "DETECTION_ONLY"
+...
+```
+
+* With JSON log format
+
+```apacheconf
+...
+2018-02-15T15:25:52.71+0100 [APP/PROC/WEB/0] OUT 14:25:52 httpd   | {"transaction":{"time":"15/Feb/2018:14:25:52 +0000","transaction_id":"WoWYcDwaEy8yCq5KffFBowAAAAY","remote_address":"XXX.XXX.XXX.XXX","remote_port":XXXXX,"local_address":"XXX.XXX.XXX.XXX","local_port":XXXX},"request":{"request_line":"GET /?test=%3Cscript%3Ealert(1)%3C/script%3E HTTP/1.1","headers":{"Host":"hostname.example.com","User-Agent":"Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:58.0) Gecko/20100101 Firefox/58.0"
+...
+[unique_id \"WoWYcDwaEy8yCq5KffFBowAAAAY\"]"],"handler":"proxy:fcgi://127.0.0.1:9000","stopwatch":{"p1":875,"p2":4735,"p3":152,"p4":442,"p5":219,"sr":381,"sw":3,"l":0,"gc":0},"response_body_dechunked":true,"producer":["ModSecurity for Apache/2.9.2 (http://www.modsecurity.org/)","OWASP_CRS/3.0.2"],"server":"Apache","engine_mode":"DETECTION_ONLY"}}
+...
+```
